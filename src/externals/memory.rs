@@ -1,6 +1,6 @@
 use crate::{error::WasmEdgeError, WasmEdgeResult};
-use wasmedge_sys as sys;
-use wasmedge_types::MemoryType;
+use bit_sys as sys;
+use bit_types::MemoryType;
 
 /// Defines a linear memory.
 #[derive(Debug, Clone)]
@@ -137,7 +137,7 @@ impl Memory {
     ///
     /// * `len` - The requested data length. If the size of `offset` + `len` is larger
     /// than the data size in this memory.
-    ///   
+    ///
     ///
     /// # Errors
     ///

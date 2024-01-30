@@ -2,7 +2,7 @@ use crate::{
     error::HostFuncError, io::WasmValTypeList, CallingFrame, FuncType, Global, Memory, Table,
     WasmEdgeResult,
 };
-use wasmedge_sys::{self as sys, AsImport, WasmValue};
+use bit_sys::{self as sys, AsImport, WasmValue};
 
 /// Creates a normal or wasi [import object](crate::ImportObject).
 ///
@@ -64,7 +64,7 @@ impl ImportObjectBuilder {
         let args = Args::wasm_types();
         let returns = Rets::wasm_types();
         let ty = FuncType::new(Some(args.to_vec()), Some(returns.to_vec()));
-        let inner_func = sys::Function::create_sync_func::<D>(&ty.into(), boxed_func, data, 0)?;
+        let inner_func = sys::Function::create::<D>(&ty.into(), boxed_func, data, 0)?;
         self.funcs.push((name.as_ref().to_owned(), inner_func));
         Ok(self)
     }
@@ -101,52 +101,7 @@ impl ImportObjectBuilder {
         data: Option<Box<D>>,
     ) -> WasmEdgeResult<Self> {
         let boxed_func = Box::new(real_func);
-        let inner_func = sys::Function::create_sync_func::<D>(&ty.into(), boxed_func, data, 0)?;
-        self.funcs.push((name.as_ref().to_owned(), inner_func));
-        Ok(self)
-    }
-
-    /// Adds an [async host function](crate::Func) to the [ImportObject] to create.
-    ///
-    /// N.B. that this function can be used in thread-safe scenarios.
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - The exported name of the [host function](crate::Func) to add.
-    ///
-    /// * `real_func` - The native function.
-    ///
-    /// * `data` - The host context data used in this function.
-    ///
-    /// # error
-    ///
-    /// If fail to create or add the [host function](crate::Func), then an error is returned.
-    #[cfg(all(feature = "async", target_os = "linux"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "async", target_os = "linux"))))]
-    pub fn with_async_func<Args, Rets, D>(
-        mut self,
-        name: impl AsRef<str>,
-        real_func: impl Fn(
-                CallingFrame,
-                Vec<WasmValue>,
-                *mut std::os::raw::c_void,
-            ) -> Box<
-                dyn std::future::Future<Output = Result<Vec<WasmValue>, HostFuncError>> + Send,
-            > + Send
-            + Sync
-            + 'static,
-        data: Option<Box<D>>,
-    ) -> WasmEdgeResult<Self>
-    where
-        Args: WasmValTypeList,
-        Rets: WasmValTypeList,
-        D: Send + Sync,
-    {
-        let args = Args::wasm_types();
-        let returns = Rets::wasm_types();
-        let ty = FuncType::new(Some(args.to_vec()), Some(returns.to_vec()));
-        let inner_func =
-            sys::Function::create_async_func(&ty.into(), Box::new(real_func), data, 0)?;
+        let inner_func = sys::Function::create::<D>(&ty.into(), boxed_func, data, 0)?;
         self.funcs.push((name.as_ref().to_owned(), inner_func));
         Ok(self)
     }
@@ -257,7 +212,6 @@ impl<T: ?Sized + Send + Sync + Clone> ImportObject<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[cfg(not(feature = "async"))]
     use crate::VmBuilder;
     use crate::{
         config::{CommonConfigOptions, ConfigBuilder},
@@ -282,7 +236,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(not(feature = "async"))]
     #[allow(clippy::assertions_on_result_states)]
     fn test_import_builder_with_data() {
         // define host data

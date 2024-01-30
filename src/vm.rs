@@ -1,8 +1,5 @@
 //! Defines WasmEdge Vm struct.
 
-#[cfg(all(feature = "async", target_os = "linux"))]
-use crate::wasi::r#async::{AsyncState, WasiContext, WasiInstance};
-#[cfg(not(feature = "async"))]
 use crate::wasi::WasiInstance;
 use crate::{
     config::Config,
@@ -11,8 +8,8 @@ use crate::{
     Executor, HostRegistration, ImportObject, Instance, Module, Statistics, Store, WasmEdgeResult,
     WasmValue,
 };
+use bit_sys as sys;
 use std::{collections::HashMap, path::Path};
-use wasmedge_sys as sys;
 
 /// Constructs a [Vm] instance.
 #[derive(Debug, Default)]
@@ -21,8 +18,6 @@ pub struct VmBuilder {
     stat: Option<Statistics>,
     store: Option<Store>,
     plugins: Vec<(String, Vec<String>)>,
-    #[cfg(all(feature = "async", target_os = "linux"))]
-    wasi_ctx: Option<WasiContext>,
 }
 impl VmBuilder {
     /// Creates a new [VmBuilder].
@@ -99,14 +94,6 @@ impl VmBuilder {
         self
     }
 
-    /// Sets the [WasiContext] for the [Vm] to build.
-    #[cfg(all(feature = "async", target_os = "linux"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "async", target_os = "linux"))))]
-    pub fn with_wasi_context(mut self, wasi_ctx: WasiContext) -> Self {
-        self.wasi_ctx = Some(wasi_ctx);
-        self
-    }
-
     /// Creates a new [Vm].
     ///
     /// # Error
@@ -116,7 +103,6 @@ impl VmBuilder {
         self.build_vm()
     }
 
-    #[cfg(not(feature = "async"))]
     fn build_vm(mut self) -> WasmEdgeResult<Vm> {
         // executor
         let executor = Executor::new(self.config.as_ref(), self.stat.as_mut())?;
@@ -188,88 +174,6 @@ impl VmBuilder {
         Ok(vm)
     }
 
-    #[cfg(all(feature = "async", target_os = "linux"))]
-    fn build_vm(mut self) -> WasmEdgeResult<Vm> {
-        // executor
-        let executor = Executor::new(self.config.as_ref(), self.stat.as_mut())?;
-
-        // store
-        let store = match self.store {
-            Some(store) => store,
-            None => Store::new()?,
-        };
-
-        // create a Vm instance
-        let mut vm = Vm {
-            config: self.config,
-            stat: self.stat,
-            executor,
-            store,
-            named_instances: HashMap::new(),
-            active_instance: None,
-            builtin_host_instances: HashMap::new(),
-            plugin_host_instances: Vec::new(),
-        };
-
-        // * register AsyncWasiModule
-        if let Some(cfg) = vm.config.as_ref() {
-            if cfg.wasi_enabled() {
-                match self.wasi_ctx {
-                    Some(ctx) => {
-                        // create an AsyncWasiModule instance
-                        let wasi_module =
-                            sys::r#async::module::AsyncWasiModule::create_from_wasi_context(
-                                ctx.inner,
-                            )?;
-
-                        // register the AsyncWasiModule instance
-                        vm.executor.inner.register_wasi_instance(
-                            &vm.store.inner,
-                            &sys::WasiInstance::AsyncWasi(wasi_module.clone()),
-                        )?;
-
-                        vm.builtin_host_instances.insert(
-                            HostRegistration::Wasi,
-                            HostRegistrationInstance::Wasi(WasiInstance(wasi_module)),
-                        );
-                    }
-                    None => {
-                        return Err(Box::new(WasmEdgeError::Vm(VmError::CreateWithWasiContext)));
-                    }
-                }
-            }
-        }
-
-        // * load and register plugin instances
-        for (pname, mnames) in self.plugins.iter() {
-            match mnames.is_empty() {
-                true => {
-                    let plugin = PluginManager::find(pname)?;
-                    for mname in plugin.mod_names().iter() {
-                        let plugin_instance = plugin.mod_instance(mname)?;
-                        vm.plugin_host_instances.push(plugin_instance);
-                        vm.store.register_plugin_module(
-                            &mut vm.executor,
-                            vm.plugin_host_instances.last().unwrap(),
-                        )?;
-                    }
-                }
-                false => {
-                    for mname in mnames {
-                        let plugin_instance = Self::create_plugin_instance(pname, mname)?;
-                        vm.plugin_host_instances.push(plugin_instance);
-                        vm.store.register_plugin_module(
-                            &mut vm.executor,
-                            vm.plugin_host_instances.last().unwrap(),
-                        )?;
-                    }
-                }
-            }
-        }
-
-        Ok(vm)
-    }
-
     fn create_plugin_instance(
         pname: impl AsRef<str>,
         mname: impl AsRef<str>,
@@ -288,12 +192,10 @@ impl VmBuilder {
 /// ```rust
 /// // If the version of rust used is less than v1.63, please uncomment the follow attribute.
 /// // #![feature(explicit_generic_args_with_impl_trait)]
-/// #[cfg(not(feature = "async"))]
-/// use wasmedge_sdk::{params, VmBuilder, WasmVal, wat2wasm, ValType, NeverType};
+/// use bitbang::{params, VmBuilder, WasmVal, wat2wasm, ValType, NeverType};
 ///
 /// #[cfg_attr(test, test)]
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
-///     #[cfg(not(feature = "async"))]
 ///     {
 ///         // create a Vm context
 ///         let vm = VmBuilder::new().build()?;
@@ -600,151 +502,6 @@ impl Vm {
         }
     }
 
-    /// Runs an exported wasm function in a (named or active) [module instance](crate::Instance) with a timeout setting
-    ///
-    /// # Arguments
-    ///
-    /// * `mod_name` - The exported name of the module instance, which holds the target function. If `None`, then the active module is used.
-    ///
-    /// * `func_name` - The exported name of the target wasm function.
-    ///
-    /// * `args` - The arguments to be passed to the target wasm function.
-    ///
-    /// * `timeout` - The maximum execution time of the function to be run.
-    ///
-    /// # Error
-    ///
-    /// If fail to run the wasm function, then an error is returned.
-    #[cfg(all(target_os = "linux", not(target_env = "musl")))]
-    pub fn run_func_with_timeout(
-        &self,
-        mod_name: Option<&str>,
-        func_name: impl AsRef<str>,
-        args: impl IntoIterator<Item = WasmValue>,
-        timeout: std::time::Duration,
-    ) -> WasmEdgeResult<Vec<WasmValue>> {
-        match mod_name {
-            Some(mod_name) => {
-                match self.named_instances.get(mod_name) {
-                    Some(named_instance) => named_instance
-                        .func(func_name.as_ref())?
-                        .run_with_timeout(self.executor(), args, timeout),
-                    None => Err(Box::new(WasmEdgeError::Vm(VmError::NotFoundModule(
-                        mod_name.into(),
-                    )))),
-                }
-            }
-            None => match &self.active_instance {
-                Some(active_instance) => active_instance
-                    .func(func_name.as_ref())?
-                    .run_with_timeout(self.executor(), args, timeout),
-                None => Err(Box::new(WasmEdgeError::Vm(VmError::NotFoundActiveModule))),
-            },
-        }
-    }
-
-    /// Asynchronously runs an exported wasm function in a (named or active) [module instance](crate::Instance).
-    ///
-    /// # Arguments
-    ///
-    /// * `async_state` - The [AsyncState] to run the wasm function.
-    ///
-    /// * `mod_name` - The exported name of the module instance, which holds the target function. If `None`, then the active module is used.
-    ///
-    /// * `func_name` - The exported name of the target wasm function.
-    ///
-    /// * `args` - The arguments to be passed to the target wasm function.
-    ///
-    /// # Error
-    ///
-    /// If fail to run the wasm function, then an error is returned.
-    #[cfg(all(feature = "async", target_os = "linux"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "async", target_os = "linux"))))]
-    pub async fn run_func_async(
-        &self,
-        async_state: &AsyncState,
-        mod_name: Option<&str>,
-        func_name: impl AsRef<str> + Send,
-        args: impl IntoIterator<Item = WasmValue> + Send,
-    ) -> WasmEdgeResult<Vec<WasmValue>> {
-        match mod_name {
-            Some(mod_name) => match self.named_instances.get(mod_name) {
-                Some(named_instance) => {
-                    named_instance
-                        .func(func_name.as_ref())?
-                        .run_async(async_state, self.executor(), args)
-                        .await
-                }
-                None => Err(Box::new(WasmEdgeError::Vm(VmError::NotFoundModule(
-                    mod_name.into(),
-                )))),
-            },
-            None => match self.active_instance.as_ref() {
-                Some(active_instance) => {
-                    active_instance
-                        .func(func_name.as_ref())?
-                        .run_async(async_state, self.executor(), args)
-                        .await
-                }
-                None => Err(Box::new(WasmEdgeError::Vm(VmError::NotFoundActiveModule))),
-            },
-        }
-    }
-
-    /// Asynchronously runs an exported wasm function in a (named or active) [module instance](crate::Instance) with a timeout setting
-    ///
-    /// # Arguments
-    ///
-    /// * `async_state` - The [AsyncState] to run the wasm function.
-    ///
-    /// * `mod_name` - The exported name of the module instance, which holds the target function. If `None`, then the active module is used.
-    ///
-    /// * `func_name` - The exported name of the target wasm function.
-    ///
-    /// * `args` - The arguments to be passed to the target wasm function.
-    ///
-    /// * `timeout` - The maximum execution time of the function to be run.
-    ///
-    /// # Error
-    ///
-    /// If fail to run the wasm function, then an error is returned.
-    #[cfg(all(feature = "async", target_os = "linux", not(target_env = "musl")))]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(all(feature = "async", target_os = "linux", not(target_env = "musl"))))
-    )]
-    pub async fn run_func_async_with_timeout(
-        &self,
-        async_state: &AsyncState,
-        mod_name: Option<&str>,
-        func_name: impl AsRef<str> + Send,
-        args: impl IntoIterator<Item = WasmValue> + Send,
-        timeout: std::time::Duration,
-    ) -> WasmEdgeResult<Vec<WasmValue>> {
-        match mod_name {
-            Some(mod_name) => match self.named_instances.get(mod_name) {
-                Some(named_instance) => {
-                    named_instance
-                        .func(func_name.as_ref())?
-                        .run_async_with_timeout(async_state, self.executor(), args, timeout)
-                        .await
-                }
-                None => Err(Box::new(WasmEdgeError::Vm(VmError::NotFoundModule(
-                    mod_name.into(),
-                )))),
-            },
-            None => match self.active_instance.as_ref() {
-                Some(active_instance) => {
-                    active_instance
-                        .func(func_name.as_ref())?
-                        .run_async_with_timeout(async_state, self.executor(), args, timeout)
-                        .await
-                }
-                None => Err(Box::new(WasmEdgeError::Vm(VmError::NotFoundActiveModule))),
-            },
-        }
-    }
-
     /// Runs an exported wasm function from the given [wasm module](crate::Module).
     ///
     /// This method is a shortcut of calling `register_module` and `run_func` in sequence.
@@ -774,45 +531,6 @@ impl Vm {
         self.run_func(None, func_name, args)
     }
 
-    /// Runs an exported wasm function from the given [wasm module](crate::Module).
-    ///
-    /// To use this method, turn on the `async` feature.
-    ///
-    /// # Arguments
-    ///
-    /// * `async_state` - The [AsyncState] to run the wasm function.
-    ///
-    /// * `module` - A [wasm module](crate::Module).
-    ///
-    /// * `func_name` - The exported name of the target wasm function.
-    ///
-    /// * `args` - The arguments to be passed to the target wasm function.
-    ///
-    /// # Error
-    ///
-    /// If fail to run, then an error is returned.
-    #[cfg(all(feature = "async", target_os = "linux"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "async", target_os = "linux"))))]
-    pub async fn run_func_from_module_async<N, A>(
-        &mut self,
-        async_state: &AsyncState,
-        module: Module,
-        func_name: N,
-        args: A,
-    ) -> WasmEdgeResult<Vec<WasmValue>>
-    where
-        N: AsRef<str> + Send,
-        A: IntoIterator<Item = WasmValue> + Send,
-    {
-        self.active_instance = Some(
-            self.store
-                .register_active_module(&mut self.executor, &module)?,
-        );
-
-        self.run_func_async(async_state, None, func_name, args)
-            .await
-    }
-
     /// Runs an exported wasm function from the given wasm file.
     ///
     /// # Arguments
@@ -838,42 +556,6 @@ impl Vm {
         self.run_func_from_module(module, func_name.as_ref(), args)
     }
 
-    /// Asynchronously runs an exported wasm function from the given wasm file.
-    ///
-    /// # Arguments
-    ///
-    /// * `async_state` - The [AsyncState] to run the wasm function.
-    ///
-    /// * `file` - A wasm file or an AOT wasm file.
-    ///
-    /// * `func_name` - The exported name of the target wasm function.
-    ///
-    /// * `args` - The arguments to be passed to the target wasm function.
-    ///
-    /// # Error
-    ///
-    /// If fail to run, then an error is returned.
-    #[cfg(all(feature = "async", target_os = "linux"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "async", target_os = "linux"))))]
-    pub async fn run_func_from_file_async<P, N, A>(
-        &mut self,
-        async_state: &AsyncState,
-        file: P,
-        func_name: N,
-        args: A,
-    ) -> WasmEdgeResult<Vec<WasmValue>>
-    where
-        P: AsRef<Path>,
-        N: AsRef<str> + Send,
-        A: IntoIterator<Item = WasmValue> + Send,
-    {
-        // load module from file
-        let module = Module::from_file(self.config.as_ref(), file.as_ref())?;
-
-        self.run_func_from_module_async(async_state, module, func_name.as_ref(), args)
-            .await
-    }
-
     /// Runs an exported wasm function from the given in-memory wasm bytes.
     ///
     /// # Arguments
@@ -897,41 +579,6 @@ impl Vm {
         let module = Module::from_bytes(self.config.as_ref(), bytes)?;
 
         self.run_func_from_module(module, func_name.as_ref(), args)
-    }
-
-    /// Runs an exported wasm function from the given in-memory wasm bytes.
-    ///
-    /// # Arguments
-    ///
-    /// * `async_state` - The [AsyncState] to run the wasm function.
-    ///
-    /// * `bytes` - The in-memory wasm bytes.
-    ///
-    /// * `func_name` - The exported name of the target wasm function.
-    ///
-    /// * `args` - The arguments to be passed to the target wasm function.
-    ///
-    /// # Error
-    ///
-    /// If fail to run, then an error is returned.
-    #[cfg(all(feature = "async", target_os = "linux"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "async", target_os = "linux"))))]
-    pub async fn run_func_from_bytes_async<N, A>(
-        &mut self,
-        async_state: &AsyncState,
-        bytes: &[u8],
-        func_name: N,
-        args: A,
-    ) -> WasmEdgeResult<Vec<WasmValue>>
-    where
-        N: AsRef<str> + Send,
-        A: IntoIterator<Item = WasmValue> + Send,
-    {
-        // load module from bytes
-        let module = Module::from_bytes(self.config.as_ref(), bytes)?;
-
-        self.run_func_from_module_async(async_state, module, func_name.as_ref(), args)
-            .await
     }
 
     /// Returns a reference to the internal [statistics](crate::Statistics) from this vm.
@@ -1068,7 +715,6 @@ enum HostRegistrationInstance {
     Wasi(WasiInstance),
 }
 
-#[cfg(not(feature = "async"))]
 #[cfg(test)]
 mod tests {
     use super::*;

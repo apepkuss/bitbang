@@ -23,29 +23,29 @@
 //!
 //! Since this crate depends on the WasmEdge C API, it needs to be installed in your system first. Please refer to [WasmEdge Installation and Uninstallation](https://wasmedge.org/book/en/quick_start/install.html) to install the WasmEdge library. The versioning table below shows the version of the WasmEdge library required by each version of the `wasmedge-sdk` crate.
 //!
-//! | wasmedge-sdk  | WasmEdge lib  | wasmedge-sys  | wasmedge-types| wasmedge-macro| async-wasi|
-//! | :-----------: | :-----------: | :-----------: | :-----------: | :-----------: | :-------: |
-//! | 0.13.2        | 0.13.5        | 0.17.5        | 0.4.4         | 0.6.1         | 0.1.0     |
-//! | 0.13.1        | 0.13.5        | 0.17.4        | 0.4.4         | 0.6.1         | 0.1.0     |
-//! | 0.13.0        | 0.13.5        | 0.17.3        | 0.4.4         | 0.6.1         | 0.1.0     |
-//! | 0.12.2        | 0.13.4        | 0.17.2        | 0.4.4         | 0.6.1         | 0.1.0     |
-//! | 0.12.1        | 0.13.4        | 0.17.1        | 0.4.4         | 0.6.1         | 0.1.0     |
-//! | 0.12.0        | 0.13.4        | 0.17.0        | 0.4.4         | 0.6.1         | 0.1.0     |
-//! | 0.11.2        | 0.13.3        | 0.16.2        | 0.4.3         | 0.6.1         | 0.1.0     |
-//! | 0.11.0        | 0.13.3        | 0.16.0        | 0.4.3         | 0.6.0         | 0.0.3     |
-//! | 0.10.1        | 0.13.3        | 0.15.1        | 0.4.2         | 0.5.0         | 0.0.2     |
-//! | 0.10.0        | 0.13.2        | 0.15.0        | 0.4.2         | 0.5.0         | 0.0.2     |
-//! | 0.9.0         | 0.13.1        | 0.14.0        | 0.4.2         | 0.4.0         | 0.0.1     |
-//! | 0.9.0         | 0.13.0        | 0.14.0        | 0.4.2         | 0.4.0         | 0.0.1     |
-//! | 0.8.1         | 0.12.1        | 0.13.1        | 0.4.1         | 0.3.0         | -         |
-//! | 0.8.0         | 0.12.0        | 0.13.0        | 0.4.1         | 0.3.0         | -         |
-//! | 0.7.1         | 0.11.2        | 0.12.2        | 0.3.1         | 0.3.0         | -         |
-//! | 0.7.0         | 0.11.2        | 0.12          | 0.3.1         | 0.3.0         | -         |
-//! | 0.6.0         | 0.11.2        | 0.11          | 0.3.0         | 0.2.0         | -         |
-//! | 0.5.0         | 0.11.1        | 0.10          | 0.3.0         | 0.1.0         | -         |
-//! | 0.4.0         | 0.11.0        | 0.9           | 0.2.1         | -             | -         |
-//! | 0.3.0         | 0.10.1        | 0.8           | 0.2           | -             | -         |
-//! | 0.1.0         | 0.10.0        | 0.7           | 0.1           | -             | -         |
+//! | wasmedge-sdk  | WasmEdge lib  | wasmedge-sys  | wasmedge-types| wasmedge-macro|
+//! | :-----------: | :-----------: | :-----------: | :-----------: | :-----------: |
+//! | 0.13.2        | 0.13.5        | 0.17.5        | 0.4.4         | 0.6.1         |
+//! | 0.13.1        | 0.13.5        | 0.17.4        | 0.4.4         | 0.6.1         |
+//! | 0.13.0        | 0.13.5        | 0.17.3        | 0.4.4         | 0.6.1         |
+//! | 0.12.2        | 0.13.4        | 0.17.2        | 0.4.4         | 0.6.1         |
+//! | 0.12.1        | 0.13.4        | 0.17.1        | 0.4.4         | 0.6.1         |
+//! | 0.12.0        | 0.13.4        | 0.17.0        | 0.4.4         | 0.6.1         |
+//! | 0.11.2        | 0.13.3        | 0.16.2        | 0.4.3         | 0.6.1         |
+//! | 0.11.0        | 0.13.3        | 0.16.0        | 0.4.3         | 0.6.0         |
+//! | 0.10.1        | 0.13.3        | 0.15.1        | 0.4.2         | 0.5.0         |
+//! | 0.10.0        | 0.13.2        | 0.15.0        | 0.4.2         | 0.5.0         |
+//! | 0.9.0         | 0.13.1        | 0.14.0        | 0.4.2         | 0.4.0         |
+//! | 0.9.0         | 0.13.0        | 0.14.0        | 0.4.2         | 0.4.0         |
+//! | 0.8.1         | 0.12.1        | 0.13.1        | 0.4.1         | 0.3.0         |
+//! | 0.8.0         | 0.12.0        | 0.13.0        | 0.4.1         | 0.3.0         |
+//! | 0.7.1         | 0.11.2        | 0.12.2        | 0.3.1         | 0.3.0         |
+//! | 0.7.0         | 0.11.2        | 0.12          | 0.3.1         | 0.3.0         |
+//! | 0.6.0         | 0.11.2        | 0.11          | 0.3.0         | 0.2.0         |
+//! | 0.5.0         | 0.11.1        | 0.10          | 0.3.0         | 0.1.0         |
+//! | 0.4.0         | 0.11.0        | 0.9           | 0.2.1         | -             |
+//! | 0.3.0         | 0.10.1        | 0.8           | 0.2           | -             |
+//! | 0.1.0         | 0.10.0        | 0.7           | 0.1           | -             |
 //!
 //!
 //! WasmEdge Rust SDK will automatically search for the WasmEdge library in your system. Alternatively you can set the `WASMEDGE_DIR` environment variable to the path of the WasmEdge library (or the `WASMEDGE_INCLUDE_DIR` and `WASMEDGE_LIB_DIR` variables for more fine-grained control). If you want to use a local `cmake` build of WasmEdge you can set the `WASMEDGE_BUILD_DIR` instead.
@@ -71,11 +71,6 @@
 //! This crate uses `rust-bindgen` during the build process. If you would like to use an external `rust-bindgen` you can set the `WASMEDGE_RUST_BINDGEN_PATH` environment variable to the `bindgen` executable path. This is particularly useful in systems like Alpine Linux (see [rust-lang/rust-bindgen#2360](https://github.com/rust-lang/rust-bindgen/issues/2360#issuecomment-1595869379), [rust-lang/rust-bindgen#2333](https://github.com/rust-lang/rust-bindgen/issues/2333)).
 //!
 //! **Notice:** The minimum supported Rust version is 1.71.
-//!
-//! ## API Reference
-//!
-//! - [API Reference](https://wasmedge.github.io/wasmedge-rust-sdk/wasmedge_sdk/index.html)
-//! - [Async API Reference](https://second-state.github.io/wasmedge-async-rust-sdk/wasmedge_sdk/index.html)
 //!
 //! ## Examples
 //!
@@ -141,25 +136,22 @@ pub use store::Store;
 #[doc(inline)]
 pub use vm::{Vm, VmBuilder};
 
-pub use wasmedge_types::{
+pub use bit_types::{
     error, wat2wasm, CompilerOptimizationLevel, CompilerOutputFormat, ExternalInstanceType,
     FuncType, GlobalType, HostRegistration, MemoryType, Mutability, RefType, TableType, ValType,
     WasmEdgeResult,
 };
 
-#[cfg(all(feature = "async", target_os = "linux"))]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "async", target_os = "linux"))))]
-pub use wasmedge_macro::async_host_function;
-pub use wasmedge_macro::host_function;
+pub use bit_macro::host_function;
 
 /// WebAssembly value type.
-pub type WasmValue = wasmedge_sys::types::WasmValue;
+pub type WasmValue = bit_sys::types::WasmValue;
 
 /// This is a workaround solution to the [`never`](https://doc.rust-lang.org/std/primitive.never.html) type in Rust. It will be replaced by `!` once it is stable.
-pub type NeverType = wasmedge_types::NeverType;
+pub type NeverType = bit_types::NeverType;
 
 #[doc(hidden)]
-pub type CallingFrame = wasmedge_sys::CallingFrame;
+pub type CallingFrame = bit_sys::CallingFrame;
 
 /// The object that is used to perform a [host function](crate::Func) is required to implement this trait.
 pub trait Engine {

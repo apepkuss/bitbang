@@ -3,7 +3,7 @@
 use crate::{
     Func, FuncType, Global, GlobalType, Memory, MemoryType, Table, TableType, WasmEdgeResult,
 };
-use wasmedge_sys as sys;
+use bit_sys as sys;
 
 /// Represents an instantiated module.
 ///

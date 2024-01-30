@@ -1,12 +1,10 @@
 //! Defines Func, SignatureBuilder, and Signature structs.
 
-#[cfg(all(feature = "async", target_os = "linux"))]
-use crate::wasi::r#async::AsyncState;
 use crate::{
     error::HostFuncError, io::WasmValTypeList, CallingFrame, Executor, FuncType, ValType,
     WasmEdgeResult, WasmValue,
 };
-use wasmedge_sys as sys;
+use bit_sys as sys;
 
 /// Defines a host function instance.
 ///
@@ -52,7 +50,7 @@ impl Func {
         let args = Args::wasm_types();
         let returns = Rets::wasm_types();
         let ty = FuncType::new(Some(args.to_vec()), Some(returns.to_vec()));
-        let inner = sys::Function::create_sync_func::<T>(&ty.clone().into(), boxed_func, data, 0)?;
+        let inner = sys::Function::create::<T>(&ty.clone().into(), boxed_func, data, 0)?;
         Ok(Self {
             inner,
             name: None,
@@ -89,99 +87,7 @@ impl Func {
         data: Option<Box<T>>,
     ) -> WasmEdgeResult<Self> {
         let boxed_func = Box::new(real_func);
-        let inner = sys::Function::create_sync_func::<T>(&ty.clone().into(), boxed_func, data, 0)?;
-        Ok(Self {
-            inner,
-            name: None,
-            mod_name: None,
-            ty,
-        })
-    }
-
-    /// Creates an asynchronous host function by wrapping a native async function.
-    ///
-    /// N.B. that this function can be used in thread-safe scenarios.
-    ///
-    /// # Arguments
-    ///
-    /// * `real_func` - The native function to be wrapped.
-    ///
-    /// * `data` - The host context data used in this function.
-    ///
-    /// # Error
-    ///
-    /// * If fail to create a Func instance, then [WasmEdgeError::Func(FuncError::Create)](crate::error::FuncError) is returned.
-    #[cfg(all(feature = "async", target_os = "linux"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "async", target_os = "linux"))))]
-    pub fn wrap_async_func<Args, Rets, T>(
-        real_func: impl Fn(
-                CallingFrame,
-                Vec<WasmValue>,
-                *mut std::os::raw::c_void,
-            ) -> Box<
-                dyn std::future::Future<
-                        Output = Result<Vec<WasmValue>, crate::error::HostFuncError>,
-                    > + Send,
-            > + Send
-            + Sync
-            + 'static,
-        data: Option<Box<T>>,
-    ) -> WasmEdgeResult<Self>
-    where
-        Args: WasmValTypeList,
-        Rets: WasmValTypeList,
-        T: Send + Sync,
-    {
-        let boxed_func = Box::new(real_func);
-        let args = Args::wasm_types();
-        let returns = Rets::wasm_types();
-        let ty = FuncType::new(Some(args.to_vec()), Some(returns.to_vec()));
-        let inner = sys::Function::create_async_func(&ty.clone().into(), boxed_func, data, 0)?;
-        Ok(Self {
-            inner,
-            name: None,
-            mod_name: None,
-            ty,
-        })
-    }
-
-    /// Creates an asynchronous host function by wrapping a native async function with the given function type.
-    ///
-    /// N.B. that this function can be used in thread-safe scenarios.
-    ///
-    /// # Arguments
-    ///
-    /// * `ty` - The function type.
-    ///
-    /// * `real_func` - The native function to be wrapped.
-    ///
-    /// * `data` - The host context data used in this function.
-    ///
-    /// # Error
-    ///
-    /// * If fail to create a Func instance, then [WasmEdgeError::Func(FuncError::Create)](crate::error::FuncError) is returned.
-    #[cfg(all(feature = "async", target_os = "linux"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "async", target_os = "linux"))))]
-    pub fn wrap_async_func_with_type<T>(
-        ty: FuncType,
-        real_func: impl Fn(
-                CallingFrame,
-                Vec<WasmValue>,
-                *mut std::os::raw::c_void,
-            ) -> Box<
-                dyn std::future::Future<
-                        Output = Result<Vec<WasmValue>, crate::error::HostFuncError>,
-                    > + Send,
-            > + Send
-            + Sync
-            + 'static,
-        data: Option<Box<T>>,
-    ) -> WasmEdgeResult<Self>
-    where
-        T: Send + Sync,
-    {
-        let boxed_func = Box::new(real_func);
-        let inner = sys::Function::create_async_func(&ty.clone().into(), boxed_func, data, 0)?;
+        let inner = sys::Function::create::<T>(&ty.clone().into(), boxed_func, data, 0)?;
         Ok(Self {
             inner,
             name: None,
@@ -241,84 +147,6 @@ impl Func {
         args: impl IntoIterator<Item = WasmValue>,
     ) -> WasmEdgeResult<Vec<WasmValue>> {
         executor.run_func(self, args)
-    }
-
-    /// Runs this host function with a timeout setting.
-    ///
-    /// # Arguments
-    ///
-    /// * `executor` - The [Executor](crate::Executor) instance.
-    ///
-    /// * `args` - The arguments passed to the host function.
-    ///
-    /// * `timeout` - The maximum execution time of the function to be run.
-    ///
-    /// # Error
-    ///
-    /// If fail to run the host function, then an error is returned.
-    #[cfg(all(target_os = "linux", not(target_env = "musl")))]
-    #[cfg_attr(docsrs, doc(cfg(all(target_os = "linux", not(target_env = "musl")))))]
-    pub fn run_with_timeout(
-        &self,
-        executor: &Executor,
-        args: impl IntoIterator<Item = WasmValue>,
-        timeout: std::time::Duration,
-    ) -> WasmEdgeResult<Vec<WasmValue>> {
-        executor.run_func_with_timeout(self, args, timeout)
-    }
-
-    /// Asynchronously runs this host function and returns the result.
-    ///
-    /// # Arguments
-    ///
-    /// * `executor` - The [Executor](crate::Executor) instance.
-    ///
-    /// * `args` - The arguments passed to the host function.
-    ///
-    /// # Error
-    ///
-    /// If fail to run the host function, then an error is returned.
-    #[cfg(all(feature = "async", target_os = "linux"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "async", target_os = "linux"))))]
-    pub async fn run_async(
-        &self,
-        async_state: &AsyncState,
-        executor: &Executor,
-        args: impl IntoIterator<Item = WasmValue> + Send,
-    ) -> WasmEdgeResult<Vec<WasmValue>> {
-        executor.run_func_async(async_state, self, args).await
-    }
-
-    /// Asynchronously runs this host function with a timeout setting.
-    ///
-    /// # Arguments
-    ///
-    /// * `async_state` - Used to store asynchronous state at run time.
-    ///
-    /// * `executor` - The [Executor](crate::Executor) instance.
-    ///
-    /// * `args` - The arguments passed to the host function.
-    ///
-    /// * `timeout` - The maximum execution time of the function to be run.
-    ///
-    /// # Error
-    ///
-    /// If fail to run the host function, then an error is returned.
-    #[cfg(all(feature = "async", target_os = "linux", not(target_env = "musl")))]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(all(feature = "async", target_os = "linux", not(target_env = "musl"))))
-    )]
-    pub async fn run_async_with_timeout(
-        &self,
-        async_state: &AsyncState,
-        executor: &Executor,
-        args: impl IntoIterator<Item = WasmValue> + Send,
-        timeout: std::time::Duration,
-    ) -> WasmEdgeResult<Vec<WasmValue>> {
-        executor
-            .run_func_async_with_timeout(async_state, self, args, timeout)
-            .await
     }
 }
 
@@ -604,7 +432,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(not(feature = "async"))]
     fn test_func_wrap_closure() -> Result<(), Box<dyn std::error::Error>> {
         // define a closure
         let real_add = |_: CallingFrame,
@@ -655,84 +482,6 @@ mod tests {
 
         let returns = vm.run_func(Some("extern"), "add", params![2, 3])?;
         assert_eq!(returns[0].to_i32(), 5);
-
-        Ok(())
-    }
-
-    #[cfg(all(feature = "async", target_os = "linux"))]
-    #[tokio::test]
-    async fn test_func_wrap_async_closure() -> Result<(), Box<dyn std::error::Error>> {
-        use crate::wasi::r#async::WasiContext;
-
-        // define an async closure
-        let c = |_frame: CallingFrame,
-                 _args: Vec<WasmValue>,
-                 data: *mut std::os::raw::c_void|
-         -> Box<
-            (dyn std::future::Future<Output = Result<Vec<WasmValue>, HostFuncError>> + Send),
-        > {
-            // Do not use `Box::from_raw`: let data = unsafe { Box::from_raw(data as *mut Data<i32, &str>) };
-            let data = unsafe { &mut *(data as *mut Data<i32, &str>) };
-
-            Box::new(async move {
-                for _ in 0..10 {
-                    println!("[async hello] say hello");
-                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                    println!("host_data: {:?}", data);
-                }
-
-                println!("[async hello] Done!");
-
-                Ok(vec![])
-            })
-        };
-
-        #[derive(Debug)]
-        struct Data<T, S> {
-            _x: i32,
-            _y: String,
-            _v: Vec<T>,
-            _s: Vec<S>,
-        }
-        let data: Data<i32, &str> = Data {
-            _x: 12,
-            _y: "hello".to_string(),
-            _v: vec![1, 2, 3],
-            _s: vec!["macos", "linux", "windows"],
-        };
-
-        // create an ImportModule instance
-        let result = ImportObjectBuilder::new()
-            .with_async_func::<(), (), Data<i32, &str>>("async_hello", c, Some(Box::new(data)))?
-            .build::<NeverType>("extern", None);
-        assert!(result.is_ok());
-        let import = result.unwrap();
-
-        // create a default WasiContext instance
-        let wasi_ctx = WasiContext::default();
-
-        // create a Vm context
-        let result = VmBuilder::new().with_wasi_context(wasi_ctx).build();
-        assert!(result.is_ok());
-        let mut vm = result.unwrap();
-
-        // register an import module into vm
-        let result = vm.register_import_module(&import);
-        assert!(result.is_ok());
-
-        async fn tick() {
-            let mut i = 0;
-            loop {
-                println!("[tick] i={i}");
-                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-                i += 1;
-            }
-        }
-        tokio::spawn(tick());
-
-        let async_state = AsyncState::new();
-        vm.run_func_async(&async_state, Some("extern"), "async_hello", params!())
-            .await?;
 
         Ok(())
     }

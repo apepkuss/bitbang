@@ -1,8 +1,8 @@
 //! Defines the general types.
 
 use crate::FuncRef;
-use wasmedge_sys::WasmValue;
-use wasmedge_types::{self, FuncType, RefType};
+use bit_sys::WasmValue;
+use bit_types::{self, FuncType, RefType};
 
 /// Defines runtime values that a WebAssembly module can either consume or produce.
 #[derive(Debug, Clone)]
@@ -53,12 +53,12 @@ impl From<Val> for WasmValue {
 impl From<WasmValue> for Val {
     fn from(value: WasmValue) -> Self {
         match value.ty() {
-            wasmedge_types::ValType::I32 => Val::I32(value.to_i32()),
-            wasmedge_types::ValType::I64 => Val::I64(value.to_i64()),
-            wasmedge_types::ValType::F32 => Val::F32(value.to_f32()),
-            wasmedge_types::ValType::F64 => Val::F64(value.to_f64()),
-            wasmedge_types::ValType::V128 => Val::V128(value.to_v128()),
-            wasmedge_types::ValType::FuncRef => {
+            bit_types::ValType::I32 => Val::I32(value.to_i32()),
+            bit_types::ValType::I64 => Val::I64(value.to_i64()),
+            bit_types::ValType::F32 => Val::F32(value.to_f32()),
+            bit_types::ValType::F64 => Val::F64(value.to_f64()),
+            bit_types::ValType::V128 => Val::V128(value.to_v128()),
+            bit_types::ValType::FuncRef => {
                 if value.is_null_ref() {
                     Val::FuncRef(None)
                 } else {
@@ -69,7 +69,7 @@ impl From<WasmValue> for Val {
                     Val::FuncRef(Some(FuncRef { inner, ty }))
                 }
             }
-            wasmedge_types::ValType::ExternRef => {
+            bit_types::ValType::ExternRef => {
                 if value.is_null_ref() {
                     Val::ExternRef(None)
                 } else {

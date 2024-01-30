@@ -5,10 +5,10 @@ documentation = "https://wasmedge.github.io/wasmedge-rust-sdk/wasmedge_sdk/"
 edition = "2021"
 exclude = ["examples/"]
 license = "Apache-2.0"
-name = "wasmedge-sdk"
+name = "bitbang"
 readme = "README.md"
-repository = "https://github.com/WasmEdge/wasmedge-rust-sdk"
-version = "0.13.2"
+# repository = "https://github.com/WasmEdge/wasmedge-rust-sdk"
+version = "0.1.0"
 
 [dependencies]
 anyhow = "1.0"
@@ -16,31 +16,26 @@ cfg-if.workspace = true
 num-derive = "0.3"
 num-traits = "0.2"
 thiserror = "1.0.30"
-wasmedge-macro.workspace = true
-wasmedge-sys = { path = "crates/wasmedge-sys", version = "0.17.5", default-features = false }
-wasmedge-types.workspace = true
+bit-macro.workspace = true
+bit-sys = { path = "crates/bit-sys", version = "^0.1.0" }
+bit-types.workspace = true
 
 [workspace.dependencies]
-async-wasi = { path = "crates/async-wasi", version = "0.1" }
 cfg-if = "1.0.0"
 parking_lot = "0.12.1"
-wasmedge-macro = { path = "crates/wasmedge-macro", version = "0.6" }
-wasmedge-types = { path = "crates/wasmedge-types", version = "0.4" }
+bit-macro = { path = "crates/bit-macro", version = "^0.1.0" }
+bit-types = { path = "crates/bit-types", version = "^0.1.0" }
 wat = "1.0"
 
-[target.'cfg(target_os = "linux")'.dependencies]
-async-wasi = { workspace = true, optional = true }
-
 [features]
-aot = ["wasmedge-sys/aot"]
-async = ["wasmedge-sys/async", "dep:async-wasi"]
-default = []
-ffi = ["wasmedge-sys/ffi"]
-standalone = ["wasmedge-sys/standalone"]
-static = ["wasmedge-sys/static"]
-wasi_crypto = ["wasmedge-sys/wasi_crypto"]
-wasi_nn = ["wasmedge-sys/wasi_nn"]
-wasmedge_process = ["wasmedge-sys/wasmedge_process"]
+aot = ["bit-sys/aot"]
+default = ["aot"]
+ffi = ["bit-sys/ffi"]
+standalone = ["bit-sys/standalone"]
+static = ["bit-sys/static"]
+wasi_crypto = ["bit-sys/wasi_crypto"]
+wasi_nn = ["bit-sys/wasi_nn"]
+wasmedge_process = ["bit-sys/wasmedge_process"]
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
@@ -50,9 +45,4 @@ features = ["aot", "wasi_crypto", "wasi_nn", "wasmedge_process", "ffi"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [workspace]
-members = [
-    "crates/wasmedge-sys",
-    "crates/wasmedge-types",
-    "crates/wasmedge-macro",
-    "crates/async-wasi",
-]
+members = ["crates/bit-sys", "crates/bit-types", "crates/bit-macro"]

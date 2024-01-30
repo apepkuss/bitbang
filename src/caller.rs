@@ -1,6 +1,6 @@
 use crate::{Executor, Instance, Memory};
-use wasmedge_sys::CallingFrame;
-use wasmedge_types::MemoryType;
+use bit_sys::CallingFrame;
+use bit_types::MemoryType;
 
 /// Represents the calling frame on top of stack.
 ///
@@ -13,7 +13,7 @@ pub struct Caller {
     instance: Option<Instance>,
 }
 impl Caller {
-    /// Creates a Caller instance with the given [CallingFrame](wasmedge_sys::CallingFrame) instance.
+    /// Creates a Caller instance with the given [CallingFrame](bit_sys::CallingFrame) instance.
     ///
     /// # Caller vs. CallingFrame
     ///

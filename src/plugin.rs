@@ -4,13 +4,13 @@ use crate::{
     error::HostFuncError, instance::Instance, io::WasmValTypeList, CallingFrame, FuncType, Global,
     Memory, Table, WasmEdgeResult, WasmValue,
 };
-use wasmedge_sys::{self as sys, AsImport};
+use bit_sys::{self as sys, AsImport};
 #[cfg(feature = "wasi_nn")]
 use wasmedge_types::error::WasmEdgeError;
 
 /// Defines low-level types used in Plugin development.
 pub mod ffi {
-    pub use wasmedge_sys::ffi::{
+    pub use bit_sys::ffi::{
         WasmEdge_ModuleDescriptor, WasmEdge_ModuleInstanceContext, WasmEdge_PluginDescriptor,
     };
 }
@@ -581,7 +581,7 @@ impl<T: ?Sized + Send + Sync + Clone> PluginModuleBuilder<T> {
         let args = Args::wasm_types();
         let returns = Rets::wasm_types();
         let ty = FuncType::new(Some(args.to_vec()), Some(returns.to_vec()));
-        let inner_func = sys::Function::create_sync_func::<D>(&ty.into(), boxed_func, data, 0)?;
+        let inner_func = sys::Function::create::<D>(&ty.into(), boxed_func, data, 0)?;
         self.funcs.push((name.as_ref().to_owned(), inner_func));
         Ok(self)
     }

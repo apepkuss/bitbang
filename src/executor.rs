@@ -1,9 +1,7 @@
 //! Defines Executor struct.
 
-#[cfg(all(feature = "async", target_os = "linux"))]
-use crate::wasi::r#async::AsyncState;
 use crate::{config::Config, Func, FuncRef, Statistics, WasmEdgeResult, WasmValue};
-use wasmedge_sys as sys;
+use bit_sys as sys;
 
 /// Defines an execution environment for both pure WASM and compiled WASM.
 #[derive(Debug, Clone)]
@@ -58,87 +56,6 @@ impl Executor {
         self.inner.call_func(&func.inner, params)
     }
 
-    /// Runs a host function instance with a timeout setting.
-    ///
-    /// # Arguments
-    ///
-    /// * `func` - The function instance to run.
-    ///
-    /// * `params` - The arguments to pass to the function.
-    ///
-    /// * `timeout` - The maximum execution time of the function to be run.
-    ///
-    /// # Errors
-    ///
-    /// If fail to run the host function, then an error is returned.
-    #[cfg(all(target_os = "linux", not(target_env = "musl")))]
-    #[cfg_attr(docsrs, doc(cfg(all(target_os = "linux", not(target_env = "musl")))))]
-    pub fn run_func_with_timeout(
-        &self,
-        func: &Func,
-        params: impl IntoIterator<Item = WasmValue>,
-        timeout: std::time::Duration,
-    ) -> WasmEdgeResult<Vec<WasmValue>> {
-        self.inner
-            .call_func_with_timeout(&func.inner, params, timeout)
-    }
-
-    /// Asynchronously runs a host function instance and returns the results.
-    ///
-    /// # Arguments
-    ///
-    /// * `func` - The function instance to run.
-    ///
-    /// * `params` - The arguments to pass to the function.
-    ///
-    /// # Errors
-    ///
-    /// If fail to run the host function, then an error is returned.
-    #[cfg(all(feature = "async", target_os = "linux"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "async", target_os = "linux"))))]
-    pub async fn run_func_async(
-        &self,
-        async_state: &AsyncState,
-        func: &Func,
-        params: impl IntoIterator<Item = WasmValue> + Send,
-    ) -> WasmEdgeResult<Vec<WasmValue>> {
-        self.inner
-            .call_func_async(async_state, &func.inner, params)
-            .await
-    }
-
-    /// Asynchronously runs a host function instance with a timeout setting.
-    ///
-    /// # Arguments
-    ///
-    /// * `async_state` - Used to store asynchronous state at run time.
-    ///
-    /// * `func` - The function instance to run.
-    ///
-    /// * `params` - The arguments to pass to the function.
-    ///
-    /// * `timeout` - The maximum execution time of the function to be run.
-    ///
-    /// # Errors
-    ///
-    /// If fail to run the host function, then an error is returned.
-    #[cfg(all(feature = "async", target_os = "linux", not(target_env = "musl")))]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(all(feature = "async", target_os = "linux", not(target_env = "musl"))))
-    )]
-    pub async fn run_func_async_with_timeout(
-        &self,
-        async_state: &AsyncState,
-        func: &Func,
-        params: impl IntoIterator<Item = WasmValue> + Send,
-        timeout: std::time::Duration,
-    ) -> WasmEdgeResult<Vec<WasmValue>> {
-        self.inner
-            .call_func_async_with_timeout(async_state, &func.inner, params, timeout)
-            .await
-    }
-
     /// Runs a host function reference instance and returns the results.
     ///
     /// # Arguments
@@ -156,30 +73,6 @@ impl Executor {
         params: impl IntoIterator<Item = WasmValue>,
     ) -> WasmEdgeResult<Vec<WasmValue>> {
         self.inner.call_func_ref(&func_ref.inner, params)
-    }
-
-    /// Asynchronously runs a host function reference instance and returns the results.
-    ///
-    /// # Arguments
-    ///
-    /// * `func_ref` - The function reference instance to run.
-    ///
-    /// * `params` - The arguments to pass to the function.
-    ///
-    /// # Errors
-    ///
-    /// If fail to run the host function reference instance, then an error is returned.
-    #[cfg(all(feature = "async", target_os = "linux"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "async", target_os = "linux"))))]
-    pub async fn run_func_ref_async(
-        &self,
-        async_state: &AsyncState,
-        func_ref: &FuncRef,
-        params: impl IntoIterator<Item = WasmValue> + Send,
-    ) -> WasmEdgeResult<Vec<WasmValue>> {
-        self.inner
-            .call_func_ref_async(async_state, &func_ref.inner, params)
-            .await
     }
 }
 

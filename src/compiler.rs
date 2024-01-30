@@ -1,8 +1,8 @@
 //! Defines WasmEdge ahead-of-time compiler.
 
 use crate::{config::Config, WasmEdgeResult};
+use bit_sys as sys;
 use std::path::{Path, PathBuf};
-use wasmedge_sys as sys;
 
 /// Defines WasmEdge ahead-of-time(AOT) compiler and the relevant APIs.
 #[derive(Debug)]
@@ -91,7 +91,6 @@ impl Compiler {
     }
 }
 
-#[cfg(not(feature = "async"))]
 #[cfg(test)]
 mod tests {
     use super::*;

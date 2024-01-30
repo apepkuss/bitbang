@@ -1,5 +1,5 @@
 //! Defines WasmEdge Driver and CoreVersion types
-use wasmedge_sys::utils;
+use bit_sys::utils;
 
 /// Defines WasmEdge Driver functions
 #[derive(Debug)]
@@ -38,21 +38,21 @@ pub struct CoreVersion {}
 impl CoreVersion {
     /// Returns the major version value of WasmEdge core.
     pub fn major() -> u32 {
-        wasmedge_sys::utils::version_major_value()
+        bit_sys::utils::version_major_value()
     }
 
     /// Returns the minor version value of WasmEdge core.
     pub fn minor() -> u32 {
-        wasmedge_sys::utils::version_minor_value()
+        bit_sys::utils::version_minor_value()
     }
 
     /// Returns the patch version value of WasmEdge core.
     pub fn patch() -> u32 {
-        wasmedge_sys::utils::version_patch_value()
+        bit_sys::utils::version_patch_value()
     }
 
     /// Returns the version string of WasmEdge core.
     pub fn version_string() -> String {
-        wasmedge_sys::utils::version_string()
+        bit_sys::utils::version_string()
     }
 }

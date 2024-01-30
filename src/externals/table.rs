@@ -1,5 +1,5 @@
 use crate::{types::Val, TableType, WasmEdgeResult};
-use wasmedge_sys as sys;
+use bit_sys as sys;
 
 /// Defines a table storing the references to host functions or external objects.
 #[derive(Debug, Clone)]

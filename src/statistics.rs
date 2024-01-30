@@ -1,7 +1,7 @@
 //! Defines WasmEdge Statistics struct.
 
 use crate::WasmEdgeResult;
-use wasmedge_sys as sys;
+use bit_sys as sys;
 
 /// Used to collect statistics of the WasmEdge runtime, such as the count of instructions in execution.
 #[derive(Debug, Clone)]
@@ -37,7 +37,7 @@ impl Statistics {
     /// for example,
     ///
     /// ```
-    /// use wasmedge_sdk::Statistics;
+    /// use bitbang::Statistics;
     ///
     /// // create a Statistics instance
     /// let stat = Statistics::new().expect("fail to create a Statistics");

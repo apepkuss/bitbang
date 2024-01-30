@@ -3,7 +3,7 @@
 use crate::WasmEdgeResult;
 #[cfg(feature = "aot")]
 use crate::{CompilerOptimizationLevel, CompilerOutputFormat};
-use wasmedge_sys as sys;
+use bit_sys as sys;
 
 /// Defines a builder for creating a [Config].
 #[derive(Debug, Default)]
@@ -130,8 +130,8 @@ impl ConfigBuilder {
 ///
 /// ```rust
 ///
-/// use wasmedge_sdk::{config::{Config, ConfigBuilder, CommonConfigOptions, StatisticsConfigOptions, RuntimeConfigOptions, HostRegistrationConfigOptions}};
-/// use wasmedge_types::{CompilerOutputFormat, CompilerOptimizationLevel};
+/// use bitbang::{config::{Config, ConfigBuilder, CommonConfigOptions, StatisticsConfigOptions, RuntimeConfigOptions, HostRegistrationConfigOptions}};
+/// use bit_types::{CompilerOutputFormat, CompilerOptimizationLevel};
 ///
 /// let common_options = CommonConfigOptions::default()
 ///     .bulk_memory_operations(true)
@@ -289,7 +289,7 @@ impl Config {
 /// Defines the common configuration options.
 ///
 /// [CommonConfigOptions] is used to set the common configuration options, which are
-///     
+///
 ///  - `ImportExportMutGlobals` supports mutable imported and exported globals.
 ///
 ///    Also see [Import/Export Mutable Globals Proposal](https://github.com/WebAssembly/mutable-global/blob/master/proposals/mutable-global/Overview.md#importexport-mutable-globals).
@@ -299,11 +299,11 @@ impl Config {
 ///    Also see [Non-trapping Float-to-int Conversions Proposal](https://github.com/WebAssembly/spec/blob/main/proposals/nontrapping-float-to-int-conversion/Overview.md).
 ///
 ///  - `SignExtensionOperators` supports new integer instructions for sign-extending 8-bit, 16-bit, and 32-bit values.
-///     
+///
 ///    Also see [Sign-extension Operators Proposal](https://github.com/WebAssembly/spec/blob/main/proposals/sign-extension-ops/Overview.md).
 ///
 ///  - `MultiValue` supports functions and instructions with multiple return values, and blocks with inputs.
-///     
+///
 ///    Also see [Multi-value Extension](https://github.com/WebAssembly/spec/blob/main/proposals/multi-value/Overview.md).
 ///
 ///  - `BulkMemoryOperations` supports bulk memory operations.
@@ -536,22 +536,22 @@ impl Default for CommonConfigOptions {
 ///
 ///  - Compiler Optimization Levels
 ///    - `O0` performs as many optimizations as possible.
-///    
-///    - `O1` optimizes quickly without destroying debuggability  
+///
+///    - `O1` optimizes quickly without destroying debuggability
 ///    - `02` optimizes for fast execution as much as possible without triggering significant incremental
-///           compile time or code size growth  
-///    - `O3` optimizes for fast execution as much as possible  
+///           compile time or code size growth
+///    - `O3` optimizes for fast execution as much as possible
 ///    - `Os` optimizes for small code size as much as possible without triggering significant incremental
-///           compile time or execution time slowdowns  
-///    - `Oz` optimizes for small code size as much as possible  
+///           compile time or execution time slowdowns
+///    - `Oz` optimizes for small code size as much as possible
 ///  - Compiler Output Formats
-///    - `Native` specifies the output format is native dynamic library (`*.wasm.so`)  
+///    - `Native` specifies the output format is native dynamic library (`*.wasm.so`)
 ///    - `Wasm` specifies the output format is WebAssembly with AOT compiled codes in custom section (`*.wasm`).
-///  
-///  - `dump_ir` determines if AOT compiler generates IR or not  
+///
+///  - `dump_ir` determines if AOT compiler generates IR or not
 ///  - `generic_binary` determines if AOT compiler generates the generic binary or not.
 ///  - `interruptible` determines if AOT compiler generates interruptible binary or not.
-///  
+///
 ///  The configuration options above are only effective to [AOT compiler](crate::Compiler).
 #[cfg(feature = "aot")]
 #[cfg_attr(docsrs, doc(cfg(feature = "aot")))]
@@ -687,9 +687,9 @@ impl Default for RuntimeConfigOptions {
 /// [StatisticsConfigOptions] is used to set the statistics configuration options, which are
 ///
 ///  - `count_instructions` determines if measuring the count of instructions when running a compiled or pure WASM.
-///   
+///
 ///  - `measure_cost` determines if measuring the instruction costs when running a compiled or pure WASM.
-///   
+///
 ///  - `measure_time` determines if measuring the running time when running a compiled or pure WASM.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct StatisticsConfigOptions {

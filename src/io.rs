@@ -3,7 +3,7 @@ use crate::{types::ExternRef, FuncRef, ValType, WasmValue};
 /// Describes the mapping of Rust type to Wasm type.
 ///
 /// ```rust
-/// use wasmedge_sdk::{WasmValType, ValType};
+/// use bitbang::{WasmValType, ValType};
 ///
 /// assert_eq!(i32::WASM_TYPE, ValType::I32);
 /// ```
@@ -65,7 +65,7 @@ mod test_wasm_val_type {
 /// Describes the mapping of a tuple of Rust types to Wasm types.
 ///
 /// ```rust
-/// use wasmedge_sdk::{FuncRef, types::ExternRef, ValType, WasmValTypeList};
+/// use bitbang::{FuncRef, types::ExternRef, ValType, WasmValTypeList};
 ///
 /// assert_eq!(
 ///      <(i32, i64, f32, f64, FuncRef, ExternRef)>::wasm_types(),

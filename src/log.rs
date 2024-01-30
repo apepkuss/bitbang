@@ -1,6 +1,6 @@
 //! Defines WasmEdge LogManager struct
 
-use wasmedge_sys as sys;
+use bit_sys as sys;
 
 /// Manipulates the runtime logger.
 #[derive(Debug)]
